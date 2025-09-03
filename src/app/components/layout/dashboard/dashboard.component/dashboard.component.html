@@ -3,81 +3,10 @@
     <div class="row">
         <div class="col-md-4"></div>
         <div class="card-body">
-            <p style="font-size: large; font-weight: lighter;">Seja Bem-Vindo!</p>
+            <p>Seja Bem-vindo!</p>
             <button id="start" onclick="activateXR()">Iniciar</button>
         </div>
         <div class="col-md-4"></div>
     </div>
     <div class="row"></div>
 </div>
-<script>
-    async function activateXR() {
-    
-    const canvas = document.createElement("canvas");
-    document.body.appendChild(canvas);
-    const gl = canvas.getContext("webgl", {xrCompatible: true});
-    const scene = new THREE.Scene();
-
-    // Iluminação
-    const light = new THREE.DirectionalLight(0xffffff, 1);
-    light.position.set(1, 1, 1);
-    scene.add(light);
-
-    // Cubo
-    const geometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
-    const materials = [
-      new THREE.MeshPhongMaterial({color: 0xff0000, transparent: true, opacity: 0.8}),
-      new THREE.MeshPhongMaterial({color: 0x0000ff, transparent: true, opacity: 0.8}),
-      new THREE.MeshPhongMaterial({color: 0x00ff00, transparent: true, opacity: 0.8}),
-      new THREE.MeshPhongMaterial({color: 0xff00ff, transparent: true, opacity: 0.8}),
-      new THREE.MeshPhongMaterial({color: 0x00ffff, transparent: true, opacity: 0.8}),
-      new THREE.MeshPhongMaterial({color: 0xffff00, transparent: true, opacity: 0.8})
-    ];
-    const cube = new THREE.Mesh(geometry, materials);
-    cube.position.set(0, 0, -0.5);
-    scene.add(cube);
-
-    // Câmera
-    const camera = new THREE.PerspectiveCamera();
-    camera.matrixAutoUpdate = false;
-
-    const renderer = new THREE.WebGLRenderer({
-        alpha: true,
-        preserveDrawingBuffer: true,
-        canvas: canvas,
-        context: gl
-    });
-    renderer.autoClear = false;
-    
-    const session = await navigator.xr.requestSession("immersive-ar");
-    session.updateRenderState({
-        baseLayer: new XRWebGLLayer(session, gl)
-    });
-    
-    const referenceSpace = await session.requestReferenceSpace('local');
-    
-    // Loop de renderização
-    const onXRFrame = (time, frame) => {
-        session.requestAnimationFrame(onXRFrame);
-        gl.bindFramebuffer(gl.FRAMEBUFFER, session.renderState.baseLayer.framebuffer);
-        const pose = frame.getViewerPose(referenceSpace);
-        if (pose) {
-            for (const view of pose.views) {
-              const viewport = session.renderState.baseLayer.getViewport(view);
-              gl.viewport(viewport.x, viewport.y, viewport.width, viewport.height);
-              
-              camera.matrix.fromArray(view.transform.matrix);
-              camera.projectionMatrix.fromArray(view.projectionMatrix);
-              camera.updateMatrixWorld(true);
-              
-              renderer.render(scene, camera);
-            }
-            cube.rotation.x += 0.01;
-            cube.rotation.y += 0.01;
-        }
-    };
-    session.requestAnimationFrame(onXRFrame);
-
-    window.addEventListener('load', checkXRSupport);
-}
-  </script>

@@ -6,12 +6,84 @@
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <!-- <link rel="icon" type="image/x-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAAdVBMVEVHcEz//////////////////////////vz///////////8Cd8ABqE4Abb0Aoz7/wABfndD/z1fycWDvOBZfvoNrw4z/13z/wg3vQCPuJQDj8e/1koVOlMxTu3q32tj1i3xAtW+f2LZjwIeZwd+Estn/4Jr3qZ4b+BeFAAAACnRSTlMArtQehuQf+6HCjFC9dQAAANhJREFUOI2dk9cOgzAMRS0KGEygQMte3f//icXMUEEi9TxFvidDig3QY5uuhUgSiJZrnmDCoQOcMTeOciJDuX86w1blRCcw1YIJrlpwwVILFqBawFWoYoYwYtJVWNz40lMgnploKctCnucsZFn2p1Borvh0VVV1iCnz3hEOWITQZzwiETDJrxD6Xo9fEpWB6FkM2OQvXicbA6Tc88aaEJIBUu63o9AGkgFSXs8Pu03GgwWkZx0O1OUslM11oLnLv7kP6htG23LaptW0va0fHP3o6Yf3cPxtzr6bXysR2XeEJwAAAABJRU5ErkJggg=="> -->
+  <script src="https://unpkg.com/three@0.126.0/build/three.js"></script>
   <link
   href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap"
   rel="stylesheet"
 />
 </head>
 <body>
+  <script>
+                async function activateXR() {
+                
+                const canvas = document.createElement("canvas");
+                document.body.appendChild(canvas);
+                const gl = canvas.getContext("webgl", {xrCompatible: true});
+                const scene = new THREE.Scene();
+
+                // Iluminação
+                const light = new THREE.DirectionalLight(0xffffff, 1);
+                light.position.set(1, 1, 1);
+                scene.add(light);
+
+                // Cubo
+                const geometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
+                const materials = [
+                new THREE.MeshPhongMaterial({color: 0xff0000, transparent: true, opacity: 0.8}),
+                new THREE.MeshPhongMaterial({color: 0x0000ff, transparent: true, opacity: 0.8}),
+                new THREE.MeshPhongMaterial({color: 0x00ff00, transparent: true, opacity: 0.8}),
+                new THREE.MeshPhongMaterial({color: 0xff00ff, transparent: true, opacity: 0.8}),
+                new THREE.MeshPhongMaterial({color: 0x00ffff, transparent: true, opacity: 0.8}),
+                new THREE.MeshPhongMaterial({color: 0xffff00, transparent: true, opacity: 0.8})
+                ];
+                const cube = new THREE.Mesh(geometry, materials);
+                cube.position.set(0, 0, -0.5);
+                scene.add(cube);
+
+                // Câmera
+                const camera = new THREE.PerspectiveCamera();
+                camera.matrixAutoUpdate = false;
+
+                const renderer = new THREE.WebGLRenderer({
+                    alpha: true,
+                    preserveDrawingBuffer: true,
+                    canvas: canvas,
+                    context: gl
+                });
+                renderer.autoClear = false;
+                
+                const session = await navigator.xr.requestSession("immersive-ar");
+                session.updateRenderState({
+                    baseLayer: new XRWebGLLayer(session, gl)
+                });
+                
+                const referenceSpace = await session.requestReferenceSpace('local');
+                
+                // Loop de renderização
+                const onXRFrame = (time, frame) => {
+                    session.requestAnimationFrame(onXRFrame);
+                    gl.bindFramebuffer(gl.FRAMEBUFFER, session.renderState.baseLayer.framebuffer);
+                    const pose = frame.getViewerPose(referenceSpace);
+                    if (pose) {
+                        for (const view of pose.views) {
+                        const viewport = session.renderState.baseLayer.getViewport(view);
+                        gl.viewport(viewport.x, viewport.y, viewport.width, viewport.height);
+                        
+                        camera.matrix.fromArray(view.transform.matrix);
+                        camera.projectionMatrix.fromArray(view.projectionMatrix);
+                        camera.updateMatrixWorld(true);
+                        
+                        renderer.render(scene, camera);
+                        }
+                        cube.rotation.x += 0.01;
+                        cube.rotation.y += 0.01;
+                    }
+                };
+                session.requestAnimationFrame(onXRFrame);
+
+                window.addEventListener('load', checkXRSupport);
+                }
+  </script>
    <app-root></app-root>
 </body>
 </html>
